@@ -1,0 +1,3 @@
+examples/,  smtlibv2/, are taken from the antlr git repos
+
+antlr-driver.py allows for easy run of the examples/ tests. more info/comments are in antlr-driver itself
