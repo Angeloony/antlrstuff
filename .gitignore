@@ -1,1 +1,5 @@
-**/smtlib_schanda
+**/benchmarks
+/outputs/
+test_files.txt
+inputs.txt
+Expr.g4
