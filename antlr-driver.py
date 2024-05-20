@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from subprocess import PIPE, STDOUT, run
 
 
@@ -70,24 +71,45 @@ def main():
     for file in test_files:
         test_inputs.append(parse_input_file(test_location + file))
     
-    
+    i = 0
     for file, input in test_inputs:
         # only run the desired test input
+        path, file_name = os.path.split(file)
+        #print(file_name[: -5])
         if test_file != None:
             if file == test_location + test_file:
-                run(["antlr4-parse", "smtlibv2/SMTLIBv2.g4", "start_", "-gui"], 
+                #with open("output" + str(i).zfill(3), 'w') as outfile:
+                run(["antlr4-parse",
+                        "smtlibv2/SMTLIBv2.g4",
+                        "start_",
+                        "-profile",
+                        "outputs/"+ file_name[: -5] +".csv"
+                        ], 
                                 stdout=PIPE,  
                                 stderr=STDOUT,
                                 input=input 
                                 )
+                i = i+1
         # run all test inputs that we have in our given folder
         elif test_file == None: 
-            run(["antlr4-parse", "smtlibv2/SMTLIBv2.g4", "start_", "-gui"], 
+            #with open("output" + str(i).zfill(3), 'w') as outfile:
+            run(["antlr4-parse",
+                "smtlibv2/SMTLIBv2.g4",
+                "start_",
+                #"-tree",
+                "-profile",
+                "outputs/"+ file_name[: -5] +".csv"
+                ], 
                                 stdout=PIPE,  
                                 stderr=STDOUT,
                                 input=input 
                                 )
+            i = i+1
+                
             
             
 if __name__ == "__main__":
+    start = time.time()
     main()
+    end = time.time()
+    print(end - start)
