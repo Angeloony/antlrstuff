@@ -1,4 +1,5 @@
 import os
+import shutil
 import string
 import sys
 import time
@@ -81,10 +82,12 @@ def run_antlr_subprocess(test_inputs, test_location, test_file):
     for file, input in test_inputs:
         # only run the desired test input
         path, file_name = os.path.split(file)
+        #file_name = file.replace("/", "_")
         #print(file_name[: -5])
         if test_file != None:
             if file == test_location + test_file:
-                with open("outputs/" + file_name[:-5] + ".o", 'w') as outfile:
+                
+                with open("outputs/" + test_location + file[:-5] + ".o", 'w') as outfile:
                     run(["antlr4-parse",
                             "smtlibv2/SMTLIBv2.g4",
                             "start_",
@@ -98,7 +101,7 @@ def run_antlr_subprocess(test_inputs, test_location, test_file):
                     i = i+1
         # run all test inputs that we have in our given folder
         elif test_file == None: 
-            with open("outputs/" + file_name[:-5] + ".o", 'w') as outfile:
+            with open("outputs/" + test_location + file_name[:-5] + ".o", 'w') as outfile:
                 run(["antlr4-parse",
                     "smtlibv2/SMTLIBv2.g4",
                     "start_",
@@ -111,7 +114,52 @@ def run_antlr_subprocess(test_inputs, test_location, test_file):
                                     input=input 
                                     )
                 i = i+1
+
+
+def what_kinds_of_errors(test_location):
+    errors = []
+    #outputs = get_all_files('outputs/')
+    
+    with open("error_files/categories.txt", "a+") as error_categorization:
+        for line in error_categorization:
+            errors.append(line)
+        
+        with open("error_files" + test_location[10:-1] + "_error_files.txt", "r") as error_files:
+            for file in error_files:
+                #print(file)
+                cur_file = open('outputs/'+ file[:-5] + 'o', "r")
+                #print(cur_file)
+                for line in cur_file:
+                    if line[:-33] in errors:
+                        continue
+                    elif line[-33:] not in errors and "line" in line[:4]:
+                        errors.append(line[-33:])
+                        error_categorization.write(line)
+        error_files.close()
+    error_categorization.close()
+    #print(errors)
                 
+    
+def check_for_syntax_errors(file_name, test_location):
+    
+    syntax_error_files = open("error_files/" + file_name + "error_files.txt", "w")
+    #print(syntax_error_files)
+    outputs = get_all_files('outputs/' + test_location)
+    
+    for file in outputs:
+        #print(file)
+        
+        with open(file, "r") as output:
+            for line in output:
+                if "line" in line:
+                    syntax_error_files.write(file[8:-2] +".smt2\n")
+                    break
+                    # TODO add dictionary so that i can track back to the file name and add the error warning to it. 
+                    # TODO we will have outputs, which include the error lines and derivation trees
+                    # TODO we can also link the outputs to the og files by using the file names (they are named the same with a different suffix)
+                    # TODO separate instances with error/no error and save them in separate files. 
+                    # TODO double check that they have no overlap 
+    syntax_error_files.close()
 
 """
     Driver for running smtlibv2 test files using antlr
@@ -127,9 +175,9 @@ def main():
     test_location = sys.argv[1]
     test_file = None
     # only init filename is its given, makes it optional
-    # maybe improve this later on
-    if len(sys.argv) >= 3:
-        test_file = sys.argv[2]
+    # # maybe improve this later on
+    # if len(sys.argv) >= 3:
+    #     test_file = sys.argv[2]
     
     # # get all test files from benchmark
     test_files = get_test_files(test_location)
@@ -149,20 +197,29 @@ def main():
     
     #for string in input_strings:
         #print(string)
+        
+    # if os.path.exists("outputs/"):
+    #     shutil.rmtree("outputs/")
+    # os.mkdir("outputs/")
+    
     test_inputs = []
     for file in test_files:
         test_inputs.append(parse_input_file(file))
-    #run_antlr_subprocess(test_inputs=test_inputs, test_location=test_location, test_file=test_file)
+    run_antlr_subprocess(test_inputs=test_inputs, test_location=test_location, test_file=test_file)
     
-    outputs = get_all_files('outputs/')
-    for file in outputs:
-        if "error" in file:
-            print(file)
-            with open(file, "r") as output:
-                for line in output:
-                    if "line" in line:
-                        print("syntax error")
+    test_folder = test_location.replace("benchmarks/", "")
+    test_folder = test_folder.replace("/", "_")
+    #print(test_folder)
+    check_for_syntax_errors(file_name=test_folder, test_location=test_location)
+    what_kinds_of_errors(test_location=test_location)
+    if len(sys.argv) >= 3:
+        if sys.argv[2] == "-r":
+            shutil.rmtree("outputs/")
             
+        
+        
+    
+           
             
 if __name__ == "__main__":
     start = time.time()
